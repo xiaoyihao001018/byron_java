@@ -1,22 +1,24 @@
 package org.example.config;
 
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.info.Contact;
-import org.springframework.context.annotation.Bean;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@OpenAPIDefinition(
+    info = @Info(
+        title = "系统管理接口文档",
+        description = "提供用户、角色、权限等相关接口",
+        version = "1.0"
+    )
+)
+@SecurityScheme(
+    name = "Bearer Authentication",
+    type = SecuritySchemeType.HTTP,
+    bearerFormat = "JWT",
+    scheme = "bearer"
+)
 public class SwaggerConfig {
-    @Bean
-    public OpenAPI springShopOpenAPI() {
-        return new OpenAPI()
-                .info(new Info()
-                        .title("Byron项目 API 文档")
-                        .description("使用 Spring Boot 3 + MyBatis Plus")
-                        .version("v1.0")
-                        .contact(new Contact()
-                                .name("ByronXiao")
-                                .email("xiaoyihao001018@gmail.com")));
-    }
 }  

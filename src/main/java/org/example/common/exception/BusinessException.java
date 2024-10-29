@@ -1,29 +1,28 @@
 package org.example.common.exception;
 
 import lombok.Getter;
-import org.example.common.result.ResultCode;
 
 @Getter
 public class BusinessException extends RuntimeException {
-    private final int code;
+    private final Integer code;
 
     public BusinessException(String message) {
         super(message);
-        this.code = ResultCode.FAILED.getCode();
+        this.code = 500;
     }
 
     public BusinessException(String message, Throwable cause) {
         super(message, cause);
-        this.code = ResultCode.FAILED.getCode();
+        this.code = 500;
     }
 
-    public BusinessException(ResultCode resultCode) {
-        super(resultCode.getMessage());
-        this.code = resultCode.getCode();
+    public BusinessException(Integer code, String message) {
+        super(message);
+        this.code = code;
     }
 
-    public BusinessException(ResultCode resultCode, Throwable cause) {
-        super(resultCode.getMessage(), cause);
-        this.code = resultCode.getCode();
+    public BusinessException(Integer code, String message, Throwable cause) {
+        super(message, cause);
+        this.code = code;
     }
 } 
