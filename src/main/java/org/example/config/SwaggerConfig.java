@@ -12,11 +12,11 @@ public class SwaggerConfig {
     public OpenAPI springShopOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("测试项目 API 文档")
+                        .title("Byron项目 API 文档")
                         .description("使用 Spring Boot 3 + MyBatis Plus")
                         .version("v1.0")
                         .contact(new Contact()
-                                .name("Your Name")
-                                .email("your.email@example.com")));
+                                .name("ByronXiao")
+                                .email("xiaoyihao001018@gmail.com")));
     }
-} 
+}  
