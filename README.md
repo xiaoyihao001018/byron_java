@@ -1,4 +1,4 @@
-# Spring Boot + MyBatis Plus + Swagger 项目搭建教程
+# Spring Boot + MyBatis Plus + Swagger + Security + JWT 项目教程
 
 ## 目录
 1. [项目初始化](#1-项目初始化)
@@ -6,6 +6,9 @@
 3. [添加 Swagger](#3-添加-swagger)
 4. [数据库配置](#4-数据库配置)
 5. [测试数据](#5-测试数据)
+6. [添加 Spring Security](#6-添加-spring-security)
+7. [集成 JWT](#7-集成-jwt)
+8. [认证授权配置](#8-认证授权配置)
 
 ## 1. 项目初始化
 
@@ -362,13 +365,182 @@ CALL generate_test_data(100);
 DROP PROCEDURE IF EXISTS generate_test_data;
 ```
 
-## 6. 验证
+## 6. 添加 Spring Security
 
+### 6.1 添加依赖
+在 `pom.xml` 中添加：
+
+```xml
+<!-- Spring Security -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-security</artifactId>
+</dependency>
+
+<!-- JWT -->
+<dependency>
+    <groupId>io.jsonwebtoken</groupId>
+    <artifactId>jjwt-api</artifactId>
+    <version>0.11.5</version>
+</dependency>
+```
+
+### 6.2 认证流程图
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant AuthController
+    participant AuthService
+    participant UserDetailsService
+    participant Database
+    
+    Client->>AuthController: POST /api/auth/login
+    AuthController->>AuthService: login(request)
+    AuthService->>UserDetailsService: loadUserByUsername()
+    UserDetailsService->>Database: findByUsername()
+    Database-->>UserDetailsService: user data
+    UserDetailsService-->>AuthService: UserDetails
+    AuthService->>AuthService: generate JWT
+    AuthService-->>AuthController: LoginResponse
+    AuthController-->>Client: JWT Token
+```
+
+### 6.3 数据库表结构
+
+```mermaid
+erDiagram
+    sys_user ||--o{ sys_user_role : has
+    sys_role ||--o{ sys_user_role : has
+    
+    sys_user {
+        bigint id PK
+        varchar username
+        varchar password
+        varchar nickname
+        tinyint status
+    }
+    
+    sys_role {
+        bigint id PK
+        varchar role_name
+        varchar role_code
+        varchar description
+    }
+    
+    sys_user_role {
+        bigint user_id PK
+        bigint role_id PK
+    }
+```
+
+### 6.4 创建认证相关表
+```sql
+-- 创建用户表
+CREATE TABLE sys_user (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(100) NOT NULL,
+    nickname VARCHAR(50),
+    status TINYINT DEFAULT 1,
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);
+
+-- 创建角色表
+CREATE TABLE sys_role (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    role_name VARCHAR(50) NOT NULL,
+    role_code VARCHAR(50) NOT NULL UNIQUE,
+    description VARCHAR(200),
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);
+
+-- 创建用户角色关联表
+CREATE TABLE sys_user_role (
+    user_id BIGINT NOT NULL,
+    role_id BIGINT NOT NULL,
+    PRIMARY KEY (user_id, role_id)
+);
+```
+
+### 6.5 实现 UserDetailsService
+```java:src/main/java/org/example/security/service/UserDetailsServiceImpl.java
+startLine: 18
+endLine: 56
+```
+
+### 6.6 创建认证控制器
+```java:src/main/java/org/example/security/controller/AuthController.java
+startLine: 16
+endLine: 29
+```
+
+## 7. JWT 配置
+
+### 7.1 JWT 工具类
+创建 `JwtUtil.java`:
+
+```java
+@Component
+public class JwtUtil {
+    @Value("${jwt.secret}")
+    private String secret;
+    
+    @Value("${jwt.expiration}")
+    private Long expiration;
+    
+    public String generateToken(UserDetails userDetails) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("sub", userDetails.getUsername());
+        claims.put("created", new Date());
+        claims.put("authorities", userDetails.getAuthorities());
+        
+        return generateToken(claims);
+    }
+}
+```
+
+### 7.2 配置文件
+在 `application.yml` 中添加：
+
+```yaml
+jwt:
+  secret: your_jwt_secret_key_must_be_very_long_and_secure
+  expiration: 86400000  # 24小时
+```
+
+## 8. 测试认证
+
+### 8.1 生成测试用户
+```sql
+-- 插入测试用户数据（密码：123456）
+INSERT INTO sys_user (username, password, nickname, status) VALUES
+('admin', '$2a$10$X/uMNuiw3UZKzefO5w.NTOoEdxD7ZN3GE3z3uqyoEZuH.PE.8k6.2', '管理员', 1);
+
+-- 插入角色数据
+INSERT INTO sys_role (role_name, role_code, description) VALUES
+('管理员', 'ROLE_ADMIN', '系统管理员');
+
+-- 关联用户和角色
+INSERT INTO sys_user_role (user_id, role_id) VALUES (1, 1);
+```
+
+### 8.2 接口测试
 1. 启动应用
 2. 访问 Swagger UI：`http://localhost:8080/swagger-ui.html`
-3. 测试接口：
-   - GET `/user/{id}` 获取用户信息
-   - POST `/user` 创建新用户
+3. 调用登录接口获取 token：
+   POST `/api/auth/login`
+   ```json
+   {
+       "username": "admin",
+       "password": "123456"
+   }
+   ```
+4. 使用返回的 token 访问其他受保护的接口
 
 ## 注意事项
 
