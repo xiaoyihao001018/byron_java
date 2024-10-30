@@ -11,10 +11,4 @@ public class LoginResponse {
     
     @Schema(description = "访问令牌")
     private String token;
-    
-    @Schema(description = "令牌类型")
-    private String tokenType;
-    
-    @Schema(description = "过期时间（秒）")
-    private Long expiresIn;
 } 

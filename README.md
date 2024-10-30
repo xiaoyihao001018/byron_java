@@ -1,102 +1,133 @@
-# Spring Boot + MyBatis Plus + Swagger + Security + JWT 项目教程
+# Spring Boot 3 + MyBatis Plus + Security + JWT 项目教程
+
+> 本教程将指导你从零开始搭建一个基于 Spring Boot 3 的后端项目,包含用户认证、权限控制等基础功能。
 
 ## 目录
 1. [项目初始化](#1-项目初始化)
-2. [添加 MyBatis Plus](#2-添加-mybatis-plus)
-3. [添加 Swagger](#3-添加-swagger)
-4. [数据库配置](#4-数据库配置)
-5. [测试数据](#5-测试数据)
-6. [添加 Spring Security](#6-添加-spring-security)
-7. [集成 JWT](#7-集成-jwt)
-8. [认证授权配置](#8-认证授权配置)
-9. [缓存集成](#9-缓存集成)
-10. [消息队列](#10-消息队列)
-11. [文件存储](#11-文件存储)
-12. [系统监控](#12-系统监控)
-13. [分布式功能](#13-分布式功能)
-14. [系统功能增强](#14-系统功能增强)
-15. [开发规范](#15-开发规范)
-16. [部署相关](#16-部署相关)
+2. [整合 MyBatis Plus](#2-整合-mybatis-plus)
+3. [集成 Swagger 接口文档](#3-集成-swagger-接口文档)
+4. [统一响应处理](#4-统一响应处理)
+5. [用户管理功能](#5-用户管理功能)
+6. [Spring Security 认证](#6-spring-security-认证)
+7. [JWT 令牌集成](#7-jwt-令牌集成)
+8. [单元测试](#8-单元测试)
+
+## 项目架构
+
+### 技术选型
+```mermaid
+mindmap
+  root((后端技术栈))
+    Spring Boot 3
+      Spring MVC
+      Spring Security
+    数据库
+      MySQL
+      MyBatis Plus
+    文档工具
+      Swagger 3
+    工具框架
+      JWT
+      Lombok
+      Validation
+```
+
+### 项目结构
+```mermaid
+graph TD
+    A[项目根目录] --> B[main]
+    A --> C[test]
+    B --> D[java]
+    B --> E[resources]
+    D --> F[config/配置类]
+    D --> G[controller/控制器]
+    D --> H[service/服务层]
+    D --> I[entity/实体类]
+    D --> J[mapper/数据访问]
+    D --> K[security/安全相关]
+    D --> L[common/公共组件]
+```
 
 ## 1. 项目初始化
 
-### 1.1 基础依赖配置
-在 `pom.xml` 中添加必要的依赖：
+### 1.1 创建 Spring Boot 项目
 
+1. 使用 IDEA 创建项目
+   - New Project -> Spring Initializr
+   - 选择 JDK 17
+   - 选择 Spring Boot 3.1.0
+
+2. 添加基础依赖
 ```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
-    <parent>
+<dependencies>
+    <!-- Spring Boot Web -->
+    <dependency>
         <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.1.0</version>
-        <relativePath/>
-    </parent>
-
-    <groupId>org.example</groupId>
-    <artifactId>test_java</artifactId>
-    <version>1.0-SNAPSHOT</version>
-
-    <properties>
-        <maven.compiler.source>23</maven.compiler.source>
-        <maven.compiler.target>23</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-
-    <repositories>
-        <repository>
-            <id>aliyun</id>
-            <url>https://maven.aliyun.com/repository/public</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
-    <dependencies>
-        <!-- Spring Boot Web -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-
-        <!-- MySQL -->
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.33</version>
-        </dependency>
-
-        <!-- Lombok -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.30</version>
-            <scope>provided</scope>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.1.0</version>
-            </plugin>
-        </plugins>
-    </build>
-</project>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    
+    <!-- Lombok -->
+    <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <optional>true</optional>
+    </dependency>
+    
+    <!-- Validation -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+</dependencies>
 ```
 
-### 1.2 创建主启动类
+### 1.2 配置文件
 
+创建 application.yml:
+```yaml
+server:
+  port: 8080
+
+spring:
+  application:
+    name: spring-boot-demo
+```
+
+### 1.3 创建启动类
+```java
+@SpringBootApplication
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+}
+```
+
+### 1.4 创建项目基础结构
+
+1. 在 IDEA 中创建以下目录结构:
+```
+src/main/java/org/example/
+├── common/
+│   ├── exception/
+│   └── result/
+├── config/
+├── controller/
+├── dto/
+│   ├── request/
+│   └── response/
+├── entity/
+├── mapper/
+├── security/
+│   ├── config/
+│   ├── service/
+│   └── util/
+├── service/
+│   └── impl/
+└── Application.java
+```
+
+2. 创建启动类 `Application.java`:
 ```java
 package org.example;
 
@@ -104,49 +135,198 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class Main {
+public class Application {
     public static void main(String[] args) {
-        SpringApplication.run(Main.class, args);
+        SpringApplication.run(Application.class, args);
     }
 }
 ```
 
-## 2. 添加 MyBatis Plus
+3. 创建统一响应类 `common/result/R.java`:
+```java
+package org.example.common.result;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class R<T> {
+    private Integer code;
+    private String message;
+    private T data;
+
+    public static <T> R<T> success(T data) {
+        return new R<>(ResultCode.SUCCESS.getCode(), ResultCode.SUCCESS.getMessage(), data);
+    }
+
+    public static <T> R<T> success() {
+        return success(null);
+    }
+
+    public static <T> R<T> fail(String message) {
+        return new R<>(ResultCode.FAILED.getCode(), message, null);
+    }
+
+    public static <T> R<T> fail(ResultCode resultCode) {
+        return new R<>(resultCode.getCode(), resultCode.getMessage(), null);
+    }
+
+    public static <T> R<T> fail(ResultCode resultCode, String message) {
+        return new R<>(resultCode.getCode(), message, null);
+    }
+}
+```
+
+4. 创建业务异常类 `common/exception/BusinessException.java`:
+```java
+package org.example.common.exception;
+
+import lombok.Getter;
+
+@Getter
+public class BusinessException extends RuntimeException {
+    private final Integer code;
+
+    public BusinessException(String message) {
+        super(message);
+        this.code = 500;
+    }
+
+    public BusinessException(Integer code, String message) {
+        super(message);
+        this.code = code;
+    }
+}
+```
+
+5. 创建全局异常处理器 `common/exception/GlobalExceptionHandler.java`:
+```java
+package org.example.common.exception;
+
+import org.example.common.result.R;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(BusinessException.class)
+    public R<Void> handleBusinessException(BusinessException e) {
+        return R.fail(e.getMessage());
+    }
+
+    @ExceptionHandler(Exception.class)
+    public R<Void> handleException(Exception e) {
+        return R.fail("系统异常，请联系管理员");
+    }
+}
+```
+
+6. 创建配置文件 `src/main/resources/application.yml`:
+```yaml
+server:
+  port: 8080
+
+spring:
+  application:
+    name: spring-boot-demo
+  
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/test_db?useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
+    
+  # 允许循环依赖
+  main:
+    allow-circular-references: true
+
+# 日志配置
+logging:
+  level:
+    org.example: DEBUG
+    org.springframework.web: INFO
+```
+
+7. 验证项目配置:
+- 确保所有文件都已创建
+- 检查包名和目录结构是否正确
+- 运行 Application.java 启动项目
+- 访问 http://localhost:8080 验证项目是否启动成功
+
+### 1.5 常见问题及解决方案
+
+1. 项目无法启动
+```
+解决步骤:
+1. 检查 JDK 版本是否为 17
+2. 确认 pom.xml 中的依赖是否完整
+3. 查看启动日志中的具体错误信息
+```
+
+2. 包结构问题
+```
+解决步骤:
+1. 确保所有包都在 org.example 下
+2. 检查包名是否正确
+3. 验证目录结构是否完整
+```
+
+3. 配置文件问题
+```
+解决步骤:
+1. 确认 application.yml 文件位置是否正确
+2. 检查 yaml 格式是否正确
+3. 验证配置项是否符合规范
+```
+
+## 2. 整合 MyBatis Plus
 
 ### 2.1 添加依赖
-在 `pom.xml` 的 `dependencies` 中添加：
+在 `pom.xml` 中添加以下依赖:
 
 ```xml
 <!-- MyBatis Plus -->
 <dependency>
     <groupId>com.baomidou</groupId>
     <artifactId>mybatis-plus-boot-starter</artifactId>
-    <version>3.5.4.1</version>
+    <version>3.5.3.1</version>
+</dependency>
+
+<!-- MySQL 驱动 -->
+<dependency>
+    <groupId>com.mysql</groupId>
+    <artifactId>mysql-connector-j</artifactId>
+    <scope>runtime</scope>
 </dependency>
 ```
 
-### 2.2 配置数据源
-创建 `application.yml` 文件：
+### 2.2 创建数据库和表
+执行以下 SQL 脚本:
 
-```yaml
-spring:
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/test_db?useSSL=false&serverTimezone=UTC
-    username: root
-    password: 123456
+```sql
+-- 创建数据库
+CREATE DATABASE IF NOT EXISTS test_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
-mybatis-plus:
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-    map-underscore-to-camel-case: true
-  global-config:
-    db-config:
-      id-type: auto
-  type-aliases-package: org.example.entity
+USE test_db;
+
+-- 创建用户表
+CREATE TABLE sys_user (
+    id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+    username VARCHAR(50) NOT NULL COMMENT '用户名',
+    password VARCHAR(100) NOT NULL COMMENT '密码',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统用户表';
 ```
 
 ### 2.3 创建实体类
+创建 `entity/SysUser.java`:
 
 ```java
 package org.example.entity;
@@ -155,67 +335,232 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import java.time.LocalDateTime;
 
 @Data
-@TableName("user")
-public class User {
+@TableName("sys_user")
+public class SysUser {
+    
     @TableId(type = IdType.AUTO)
     private Long id;
-    private String name;
-    private Integer age;
-    private String email;
+    
+    private String username;
+    
+    private String password;
+    
+    private LocalDateTime createTime;
 }
 ```
 
-### 2.4 创建 Mapper
+### 2.4 创建 Mapper 接口
+创建 `mapper/SysUserMapper.java`:
 
 ```java
 package org.example.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import org.example.entity.User;
 import org.apache.ibatis.annotations.Mapper;
+import org.example.entity.SysUser;
 
 @Mapper
-public interface UserMapper extends BaseMapper<User> {
+public interface SysUserMapper extends BaseMapper<SysUser> {
 }
 ```
 
-### 2.5 创建 Service
+### 2.5 创建服务层
+创建 `service/SysUserService.java`:
 
 ```java
 package org.example.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
-import org.example.entity.User;
-
-public interface UserService extends IService<User> {
-}
-```
-
-### 2.6 创建 Service 实现类
-
-```java
-package org.example.service.impl;
-
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import org.example.entity.User;
-import org.example.mapper.UserMapper;
-import org.example.service.UserService;
+import org.example.entity.SysUser;
+import org.example.mapper.SysUserMapper;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+public class SysUserService extends ServiceImpl<SysUserMapper, SysUser> {
 }
 ```
 
-## 3. 添加 Swagger
+### 2.6 创建控制器
+创建 `controller/SysUserController.java`:
+
+```java
+package org.example.controller;
+
+import org.example.common.result.R;
+import org.example.entity.SysUser;
+import org.example.service.SysUserService;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/sys-user")
+public class SysUserController {
+
+    private final SysUserService sysUserService;
+
+    public SysUserController(SysUserService sysUserService) {
+        this.sysUserService = sysUserService;
+    }
+
+    @GetMapping
+    public R<SysUser> getSysUser() {
+        return R.success(sysUserService.getById(1L));
+    }
+}
+```
+
+### 2.7 创建 Swagger 接口文档
+创建 `controller/SwaggerConfig.java`:
+
+```java
+package org.example.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import springfox.documentation.builders.ApiInfoBuilder;
+import springfox.documentation.builders.PathSelectors;
+import springfox.documentation.builders.RequestHandlerSelectors;
+import springfox.documentation.service.ApiInfo;
+import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spring.web.plugins.Docket;
+
+@Configuration
+public class SwaggerConfig {
+
+    @Bean
+    public Docket createRestApi() {
+        return new Docket(DocumentationType.SWAGGER_2)
+                .apiInfo(apiInfo())
+                .select()
+                .apis(RequestHandlerSelectors.basePackage("org.example.controller"))
+                .paths(PathSelectors.any())
+                .build();
+    }
+
+    private ApiInfo apiInfo() {
+        return new ApiInfoBuilder()
+                .title("Spring Boot 3 + MyBatis Plus + Security + JWT 项目教程")
+                .description("本教程将指导你从零开始搭建一个基于 Spring Boot 3 的后端项目,包含用户认证、权限控制等基础功能。")
+                .termsOfServiceUrl("http://localhost:8080")
+                .version("1.0")
+                .build();
+    }
+}
+```
+
+### 2.8 创建 Spring Security 配置
+创建 `security/config/SecurityConfig.java`:
+
+```java
+package org.example.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        UserDetails userDetails = User.withDefaultPasswordEncoder()
+                .username("admin")
+                .password("admin")
+                .roles("USER")
+                .build();
+        return new InMemoryUserDetailsManager(userDetails);
+    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.authorizeRequests()
+                .antMatchers("/sys-user").hasRole("USER")
+                .anyRequest().authenticated()
+                .and()
+                .formLogin()
+                .and()
+                .httpBasic();
+    }
+}
+```
+
+### 2.9 创建 JWT 配置
+创建 `security/config/JwtConfig.java`:
+
+```java
+package org.example.config;
+
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Component;
+
+import java.util.Date;
+
+@Component
+public class JwtConfig {
+
+    private static final String SECRET_KEY = "secret";
+
+    public String generateToken(UserDetails userDetails) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + 1000 * 60 * 60 * 10);
+
+        return Jwts.builder()
+                .setSubject(userDetails.getUsername())
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(SignatureAlgorithm.HS512, SECRET_KEY)
+                .compact();
+    }
+}
+```
+
+### 2.10 创建单元测试
+创建 `test/SysUserServiceTest.java`:
+
+```java
+package org.example.service;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.example.entity.SysUser;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+@SpringBootTest
+public class SysUserServiceTest {
+
+    @Autowired
+    private SysUserService sysUserService;
+
+    @Test
+    public void testGetSysUser() {
+        SysUser sysUser = sysUserService.getById(1L);
+        assertNotNull(sysUser);
+    }
+}
+```
+
+## 3. 集成 Swagger 接口文档
 
 ### 3.1 添加依赖
-在 `pom.xml` 的 `dependencies` 中添加：
+在 `pom.xml` 中添加:
 
 ```xml
-<!-- SpringDoc OpenAPI (Swagger) -->
+<!-- Swagger 3 -->
 <dependency>
     <groupId>org.springdoc</groupId>
     <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
@@ -224,34 +569,167 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 ```
 
 ### 3.2 创建 Swagger 配置类
+创建 `config/SwaggerConfig.java`:
 
 ```java
 package org.example.config;
 
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.info.Contact;
-import org.springframework.context.annotation.Bean;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@OpenAPIDefinition(
+    info = @Info(
+        title = "系统管理接口文档",
+        description = "提供用户管理等相关接口",
+        version = "1.0"
+    )
+)
+@SecurityScheme(
+    name = "Bearer Authentication",
+    type = SecuritySchemeType.HTTP,
+    bearerFormat = "JWT",
+    scheme = "bearer"
+)
 public class SwaggerConfig {
-    @Bean
-    public OpenAPI springShopOpenAPI() {
-        return new OpenAPI()
-                .info(new Info()
-                        .title("测试项目 API 文档")
-                        .description("使用 Spring Boot 3 + MyBatis Plus")
-                        .version("v1.0")
-                        .contact(new Contact()
-                                .name("Your Name")
-                                .email("your.email@example.com")));
+}
+```
+
+### 3.3 创建请求和响应对象
+1. 创建 `dto/request/UserCreateRequest.java`:
+```java
+package org.example.dto.request;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+
+@Data
+@Schema(description = "创建用户请求")
+public class UserCreateRequest {
+    
+    @NotBlank(message = "用户名不能为空")
+    @Size(min = 4, max = 20, message = "用户名长度必须在4-20个字符之间")
+    @Schema(description = "用户名")
+    private String username;
+    
+    @NotBlank(message = "密码不能为空")
+    @Size(min = 6, max = 20, message = "密码长度必须在6-20个字符之间")
+    @Schema(description = "密码")
+    private String password;
+}
+```
+
+2. 创建 `dto/request/UserUpdateRequest.java`:
+```java
+package org.example.dto.request;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+
+@Data
+@Schema(description = "更新用户请求")
+public class UserUpdateRequest {
+    
+    @NotBlank(message = "用户名不能为空")
+    @Size(min = 4, max = 20, message = "用户名长度必须在4-20个字符之间")
+    @Schema(description = "用户名")
+    private String username;
+    
+    @Size(min = 6, max = 20, message = "密码长度必须在6-20个字符之间")
+    @Schema(description = "新密码，不修改则不传")
+    private String newPassword;
+}
+```
+
+3. 创建 `dto/response/UserDetailResponse.java`:
+```java
+package org.example.dto.response;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+import java.time.LocalDateTime;
+
+@Data
+@Schema(description = "用户详情响应")
+public class UserDetailResponse {
+    
+    @Schema(description = "用户ID")
+    private Long id;
+    
+    @Schema(description = "用户名")
+    private String username;
+    
+    @Schema(description = "创建时间")
+    private LocalDateTime createTime;
+}
+```
+
+### 3.4 创建控制器
+创建 `controller/SysUserController.java`:
+
+```java
+package org.example.controller;
+
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.example.common.result.R;
+import org.example.dto.request.UserUpdateRequest;
+import org.example.dto.response.UserDetailResponse;
+import org.example.entity.SysUser;
+import org.example.service.SysUserService;
+import org.springframework.web.bind.annotation.*;
+
+@Tag(name = "用户管理", description = "用户管理相关接口")
+@RestController
+@RequestMapping("/api/users")
+@RequiredArgsConstructor
+@SecurityRequirement(name = "Bearer Authentication")
+public class SysUserController {
+
+    private final SysUserService userService;
+
+    @Operation(summary = "分页查询用户")
+    @GetMapping
+    public R<IPage<UserDetailResponse>> pageUsers(
+            @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer current,
+            @Parameter(description = "每页大小") @RequestParam(defaultValue = "10") Integer size,
+            @Parameter(description = "用户名") @RequestParam(required = false) String username) {
+        Page<SysUser> page = new Page<>(current, size);
+        return R.success(userService.pageUsers(page, username));
+    }
+
+    @Operation(summary = "获取用户详情")
+    @GetMapping("/{id}")
+    public R<UserDetailResponse> getUserDetail(@Parameter(description = "用户ID") @PathVariable Long id) {
+        return R.success(userService.getUserDetail(id));
+    }
+
+    @Operation(summary = "更新用户")
+    @PutMapping("/{id}")
+    public R<Void> updateUser(
+            @Parameter(description = "用户ID") @PathVariable Long id,
+            @Valid @RequestBody UserUpdateRequest request) {
+        userService.updateUser(id, request);
+        return R.success();
     }
 }
 ```
 
-### 3.3 添加 Swagger 配置
-在 `application.yml` 中添加：
+### 3.5 配置 Swagger
+在 `application.yml` 中添加:
 
 ```yaml
 springdoc:
@@ -262,473 +740,113 @@ springdoc:
   packages-to-scan: org.example.controller
 ```
 
-### 3.4 创建 Controller 并添加 Swagger 注解
+### 3.6 验证步骤
+1. 启动项目
+2. 访问 Swagger UI: http://localhost:8080/swagger-ui.html
+3. 检查接口文档是否正确显示
+4. 测试接口是否可以正常调用
+
+### 3.7 常见问题
+
+1. Swagger UI 无法访问
+```
+解决步骤:
+1. 确认依赖版本是否正确
+2. 检查配置路径是否正确
+3. 验证包扫描路径是否正确
+```
+
+
+## 4. 统一响应处理
+
+### 4.1 创建响应码枚举
+创建 `common/result/ResultCode.java`:
 
 ```java
-package org.example.controller;
+package org.example.common.result;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.example.service.UserService;
-import org.example.entity.User;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import lombok.Getter;
 
-@Tag(name = "用户管理", description = "用户管理相关接口")
-@RestController
-@RequestMapping("/user")
-public class UserController {
-    @Autowired
-    private UserService userService;
+@Getter
+public enum ResultCode {
+    SUCCESS(200, "操作成功"),
+    UNAUTHORIZED(401, "未登录或token已过期"),
+    FORBIDDEN(403, "没有相关权限"),
+    VALIDATE_FAILED(404, "参数检验失败"),
+    FAILED(500, "操作失败"),
+    
+    ;
 
-    @Operation(summary = "获取用户信息", description = "根据用户ID获取用户信息")
-    @GetMapping("/{id}")
-    public User getUser(@PathVariable Long id) {
-        return userService.getById(id);
-    }
+    private final Integer code;
+    private final String message;
 
-    @Operation(summary = "创建用户", description = "创建新用户")
-    @PostMapping
-    public boolean save(@RequestBody User user) {
-        return userService.save(user);
+    ResultCode(Integer code, String message) {
+        this.code = code;
+        this.message = message;
     }
 }
 ```
 
-## 4. 数据库配置
-
-### 4.1 创建数据库和表
-执行以下 SQL 语句：
-
-```sql
--- 创建数据库
-CREATE DATABASE IF NOT EXISTS test_db;
-USE test_db;
-
--- 创建用户表
-CREATE TABLE IF NOT EXISTS user (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    name VARCHAR(30) NULL DEFAULT NULL,
-    age INT NULL DEFAULT NULL,
-    email VARCHAR(50) NULL DEFAULT NULL,
-    PRIMARY KEY (id)
-);
-```
-
-## 5. 测试数据
-
-### 5.1 插入测试数据
-
-```sql
--- 插入测试数据
-INSERT INTO user (name, age, email) VALUES
-('张三', 25, 'zhangsan@example.com'),
-('李四', 30, 'lisi@example.com'),
-('王五', 28, 'wangwu@example.com'),
-('赵六', 35, 'zhaoliu@example.com'),
-('孙七', 22, 'sunqi@example.com');
-
--- 验证数据
-SELECT * FROM user;
-```
-
-### 5.2 生成大量测试数据（可选）
-
-```sql
--- 创建存储过程生成测试数据
-DELIMITER //
-CREATE PROCEDURE generate_test_data(IN num INT)
-BEGIN
-    DECLARE i INT DEFAULT 0;
-    WHILE i < num DO
-        INSERT INTO user (name, age, email) VALUES
-        (
-            CONCAT(
-                ELT(FLOOR(1 + RAND() * 100) % 10, '张', '李', '王', '赵', '孙', '周', '吴', '郑', '刘', '陈'),
-                ELT(FLOOR(1 + RAND() * 100) % 10, '一', '二', '三', '四', '五', '六', '七', '八', '九', '十')
-            ),
-            FLOOR(18 + RAND() * 42),
-            CONCAT(
-                LOWER(
-                    CONCAT(
-                        CHAR(FLOOR(97 + RAND() * 26)),
-                        CHAR(FLOOR(97 + RAND() * 26)),
-                        CHAR(FLOOR(97 + RAND() * 26)),
-                        CHAR(FLOOR(97 + RAND() * 26)),
-                        CHAR(FLOOR(97 + RAND() * 26))
-                    )
-                ),
-                '@example.com'
-            )
-        );
-        SET i = i + 1;
-    END WHILE;
-END //
-DELIMITER ;
-
--- 执行存储过程，生成100条测试数据
-CALL generate_test_data(100);
-
--- 删除存储过程（可选）
-DROP PROCEDURE IF EXISTS generate_test_data;
-```
-
-## 6. 添加 Spring Security
-
-### 6.1 添加依赖
-在 `pom.xml` 中添加：
-
-```xml
-<!-- Spring Security -->
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-security</artifactId>
-</dependency>
-
-<!-- JWT -->
-<dependency>
-    <groupId>io.jsonwebtoken</groupId>
-    <artifactId>jjwt-api</artifactId>
-    <version>0.11.5</version>
-</dependency>
-```
-
-### 6.2 认证流程图
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant AuthController
-    participant AuthService
-    participant UserDetailsService
-    participant Database
-    
-    Client->>AuthController: POST /api/auth/login
-    AuthController->>AuthService: login(request)
-    AuthService->>UserDetailsService: loadUserByUsername()
-    UserDetailsService->>Database: findByUsername()
-    Database-->>UserDetailsService: user data
-    UserDetailsService-->>AuthService: UserDetails
-    AuthService->>AuthService: generate JWT
-    AuthService-->>AuthController: LoginResponse
-    AuthController-->>Client: JWT Token
-```
-
-### 6.3 数据库表结构
-
-```mermaid
-erDiagram
-    sys_user ||--o{ sys_user_role : has
-    sys_role ||--o{ sys_user_role : has
-    
-    sys_user {
-        bigint id PK
-        varchar username
-        varchar password
-        varchar nickname
-        tinyint status
-    }
-    
-    sys_role {
-        bigint id PK
-        varchar role_name
-        varchar role_code
-        varchar description
-    }
-    
-    sys_user_role {
-        bigint user_id PK
-        bigint role_id PK
-    }
-```
-
-### 6.4 创建认证相关表
-```sql
--- 创建用户表
-CREATE TABLE sys_user (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    password VARCHAR(100) NOT NULL,
-    nickname VARCHAR(50),
-    status TINYINT DEFAULT 1,
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
-);
-
--- 创建角色表
-CREATE TABLE sys_role (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    role_name VARCHAR(50) NOT NULL,
-    role_code VARCHAR(50) NOT NULL UNIQUE,
-    description VARCHAR(200),
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
-);
-
--- 创建用户角色关联表
-CREATE TABLE sys_user_role (
-    user_id BIGINT NOT NULL,
-    role_id BIGINT NOT NULL,
-    PRIMARY KEY (user_id, role_id)
-);
-```
-
-### 6.5 实现 UserDetailsService
-```java
-package org.example.security.service;
-
-import lombok.RequiredArgsConstructor;
-import org.example.entity.SysUser;
-import org.example.mapper.SysUserMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.stream.Collectors;
-
-@Service
-@RequiredArgsConstructor
-public class UserDetailsServiceImpl implements UserDetailsService {
-
-    private final SysUserMapper sysUserMapper;
-    private static final Logger log = LoggerFactory.getLogger(UserDetailsServiceImpl.class);
-
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // 查询用户
-        SysUser user = sysUserMapper.findByUsername(username);
-        if (user == null) {
-            throw new UsernameNotFoundException("用户名或密码错误");
-        }
-        
-        log.info("找到用户: {}", user.getUsername());
-        log.info("数据库密码: {}", user.getPassword());
-        log.info("用户状态: {}", user.getStatus());
-        
-        // 查询用户角色
-        List<String> roles = sysUserMapper.findUserRoles(user.getId());
-        log.info("用户角色: {}", roles);
-        
-        // 转换为 Spring Security 的 Authority
-        List<SimpleGrantedAuthority> authorities = roles.stream()
-                .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toList());
-
-        // 返回 UserDetails 对象
-        return new User(
-            user.getUsername(),
-            user.getPassword(),
-            user.getStatus() == 1,
-            true,
-            true,
-            true,
-            authorities
-        );
-    }
-} 
-```
-
-### 6.6 创建认证控制器
-```java
-package org.example.security.controller;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.example.common.result.R;
-import org.example.security.dto.LoginRequest;
-import org.example.security.dto.LoginResponse;
-import org.example.security.service.AuthService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-@Tag(name = "认证管理", description = "认证相关接口")
-@RestController
-@RequestMapping("/api/auth")
-@RequiredArgsConstructor
-public class AuthController {
-
-    private final AuthService authService;
-
-    @Operation(summary = "用户登录", description = "用户登录并获取令牌")
-    @PostMapping("/login")
-    public R<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        return authService.login(request);
-    }
-} 
-```
-
-## 7. JWT 配置
-
-### 7.1 JWT 工具类
-创建 `JwtUtil.java`:
+### 4.2 增强统一响应对象
+修改 `common/result/R.java`:
 
 ```java
-@Component
-public class JwtUtil {
-    @Value("${jwt.secret}")
-    private String secret;
-    
-    @Value("${jwt.expiration}")
-    private Long expiration;
-    
-    public String generateToken(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("sub", userDetails.getUsername());
-        claims.put("created", new Date());
-        claims.put("authorities", userDetails.getAuthorities());
-        
-        return generateToken(claims);
+package org.example.common.result;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class R<T> {
+    private Integer code;
+    private String message;
+    private T data;
+
+    public static <T> R<T> success(T data) {
+        return new R<>(ResultCode.SUCCESS.getCode(), ResultCode.SUCCESS.getMessage(), data);
+    }
+
+    public static <T> R<T> success() {
+        return success(null);
+    }
+
+    public static <T> R<T> fail(String message) {
+        return new R<>(ResultCode.FAILED.getCode(), message, null);
+    }
+
+    public static <T> R<T> fail(ResultCode resultCode) {
+        return new R<>(resultCode.getCode(), resultCode.getMessage(), null);
+    }
+
+    public static <T> R<T> fail(ResultCode resultCode, String message) {
+        return new R<>(resultCode.getCode(), message, null);
     }
 }
 ```
 
-### 7.2 配置文件
-在 `application.yml` 中添加：
+### 4.3 创建参数验证异常处理
+修改 `common/exception/GlobalExceptionHandler.java`:
 
-```yaml
-jwt:
-  secret: your_jwt_secret_key_must_be_very_long_and_secure
-  expiration: 86400000  # 24小时
+```java
+package org.example.common.exception;
+
+import lombok.Getter;
+
+@Getter
+public class BusinessException extends RuntimeException {
+    private final Integer code;
+
+    public BusinessException(String message) {
+        super(message);
+        this.code = 500;
+    }
+
+    public BusinessException(Integer code, String message) {
+        super(message);
+        this.code = code;
+    }
+}
 ```
-
-## 8. 测试认证
-
-### 8.1 生成测试用户
-```sql
--- 插入测试用户数据（密码：123456）
-INSERT INTO sys_user (username, password, nickname, status) VALUES
-('admin', '$2a$10$X/uMNuiw3UZKzefO5w.NTOoEdxD7ZN3GE3z3uqyoEZuH.PE.8k6.2', '管理员', 1);
-
--- 插入角色数据
-INSERT INTO sys_role (role_name, role_code, description) VALUES
-('管理员', 'ROLE_ADMIN', '系统管理员');
-
--- 关联用户和角色
-INSERT INTO sys_user_role (user_id, role_id) VALUES (1, 1);
-```
-
-### 8.2 接口测试
-1. 启动应用
-2. 访问 Swagger UI：`http://localhost:8080/swagger-ui.html`
-3. 调用登录接口获取 token：
-   POST `/api/auth/login`
-   ```json
-   {
-       "username": "admin",
-       "password": "123456"
-   }
-   ```
-4. 使用返回的 token 访问其他受保护的接口
-
-## 9. 缓存集成
-
-### 9.1 Redis 缓存
-- 用户信息缓存
-- 接口响应缓存
-- 验证码存储
-- 在线用户管理
-
-### 9.2 本地缓存
-- Caffeine 本地缓存
-- 多级缓存架构
-
-## 10. 消息队列
-
-### 10.1 RabbitMQ 集成
-- 异步日志处理
-- 邮件发送队列
-- 业务解耦
-
-## 11. 文件存储
-
-### 11.1 MinIO 对象存储
-- 文件上传下载
-- 图片处理
-- 文件预览
-
-## 12. 系统监控
-
-### 12.1 Spring Boot Admin
-- 应用健康监控
-- 性能指标收集
-- 日志级别动态调整
-
-### 12.2 Prometheus + Grafana
-- 系统监控大盘
-- 告警配置
-- 性能分析
-
-## 13. 分布式功能
-
-### 13.1 分布式锁
-- Redisson 分布式锁
-- 分布式限流
-- 分布式缓存
-
-### 13.2 分布式任务调度
-- XXL-JOB 任务调度
-- 定时任务管理
-- 任务执行日志
-
-## 14. 系统功能增强
-
-### 14.1 数据权限
-- 部门管理
-- 数据范围控制
-- 字段级权限
-
-### 14.2 操作日志
-- 用户行为日志
-- 系统异常日志
-- 数据变更记录
-
-### 14.3 数据导入导出
-- Excel 导入导出
-- PDF 报表生成
-- 大数据量处理
-
-## 15. 开发规范
-
-### 15.1 接口规范
-- 统一响应格式
-- 接口版本控制
-- 接口文档规范
-
-### 15.2 异常处理
-- 全局异常处理
-- 业务异常定义
-- 错误码规范
-
-### 15.3 数据验证
-- 请求参数验证
-- 数据脱敏处理
-- 敏感数据加密
-
-## 16. 部署相关
-
-### 16.1 容器化
-- Docker 构建文件
-- Docker Compose 配置
-- 容器监控
-
-### 16.2 CI/CD
-- Jenkins 流水线
-- 自动化测试
-- 自动化部署
-
-### 16.3 环境配置
-- 多环境配置
-- 配置中心
-- 密钥管理

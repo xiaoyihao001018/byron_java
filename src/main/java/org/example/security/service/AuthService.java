@@ -3,6 +3,7 @@ package org.example.security.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.exception.BusinessException;
+import org.example.common.result.R;
 import org.example.entity.SysUser;
 import org.example.security.dto.LoginRequest;
 import org.example.security.dto.LoginResponse;
@@ -17,6 +18,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -27,24 +30,20 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final SysUserService userService;
 
-    public String login(String username, String password) {
+    public R<LoginResponse> login(LoginRequest request) {
         try {
-            // 打印调试信息
-            SysUser user = userService.findByUsername(username);
-            if (user != null) {
-                log.debug("数据库中的密码: {}", user.getPassword());
-                log.debug("输入密码的加密结果: {}", passwordEncoder.encode(password));
-                log.debug("密码匹配结果: {}", passwordEncoder.matches(password, user.getPassword()));
-            }
-
             Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password)
+                new UsernamePasswordAuthenticationToken(
+                    request.getUsername(), 
+                    request.getPassword()
+                )
             );
             
-            return jwtUtil.generateToken(authentication);
+            String token = jwtUtil.generateToken(authentication);
+            return R.success(new LoginResponse(token));
         } catch (AuthenticationException e) {
-            log.error("认证失败: {}", e.getMessage(), e);
-            throw new BusinessException("登录失败");
+            log.error("认证失败", e);
+            return R.fail("用户名或密码错误");
         }
     }
 
@@ -58,8 +57,7 @@ public class AuthService {
         SysUser user = new SysUser();
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setNickname(request.getNickname());
-        user.setStatus(1);
+        user.setCreateTime(LocalDateTime.now());
 
         // 保存用户
         userService.save(user);
