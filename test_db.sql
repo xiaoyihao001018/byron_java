@@ -1,52 +1,76 @@
--- 删除已存在的表（按照外键关系的顺序删除）
-DROP TABLE IF EXISTS sys_user_role;
-DROP TABLE IF EXISTS sys_role;
-DROP TABLE IF EXISTS sys_user;
+-- 创建数据库
+CREATE DATABASE IF NOT EXISTS test_db;
+USE test_db;
 
--- 创建用户表
-CREATE TABLE sys_user (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
-    username VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名',
-    password VARCHAR(100) NOT NULL COMMENT '密码',
-    nickname VARCHAR(50) COMMENT '昵称',
-    status TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    CONSTRAINT uk_username UNIQUE (username)
-) COMMENT '系统用户表';
+-- 创建系统用户表
+CREATE TABLE IF NOT EXISTS sys_user (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(100) NOT NULL,
+    nickname VARCHAR(50),
+    status TINYINT DEFAULT 1 COMMENT '1:启用 0:禁用',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统用户表';
 
 -- 创建角色表
-CREATE TABLE sys_role (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
-    role_name VARCHAR(50) NOT NULL COMMENT '角色名称',
-    role_code VARCHAR(50) NOT NULL COMMENT '角色编码',
-    description VARCHAR(100) COMMENT '角色描述',
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    CONSTRAINT uk_role_code UNIQUE (role_code)
-) COMMENT '系统角色表';
+CREATE TABLE IF NOT EXISTS sys_role (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    role_name VARCHAR(50) NOT NULL,
+    role_code VARCHAR(50) NOT NULL UNIQUE,
+    description VARCHAR(200),
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色表';
 
 -- 创建用户角色关联表
-CREATE TABLE sys_user_role (
-    user_id BIGINT COMMENT '用户ID',
-    role_id BIGINT COMMENT '角色ID',
+CREATE TABLE IF NOT EXISTS sys_user_role (
+    user_id BIGINT NOT NULL,
+    role_id BIGINT NOT NULL,
     PRIMARY KEY (user_id, role_id),
-    CONSTRAINT fk_ur_user_id FOREIGN KEY (user_id) REFERENCES sys_user (id) ON DELETE CASCADE,
-    CONSTRAINT fk_ur_role_id FOREIGN KEY (role_id) REFERENCES sys_role (id) ON DELETE CASCADE
-) COMMENT '用户角色关联表';
+    FOREIGN KEY (user_id) REFERENCES sys_user(id),
+    FOREIGN KEY (role_id) REFERENCES sys_role(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户角色关联表';
 
--- 插入初始角色数据
+-- 插入测试角色数据
 INSERT INTO sys_role (role_name, role_code, description) VALUES 
-('系统管理员', 'ADMIN', '系统管理员，拥有所有权限'),
-('普通用户', 'USER', '普通用户，拥有基本权限');
+('管理员', 'ROLE_ADMIN', '系统管理员'),
+('普通用户', 'ROLE_USER', '普通用户');
 
--- 插入管理员用户
--- 密码为 123456 的 BCrypt 加密结果
-INSERT INTO sys_user (username, password, nickname, status) VALUES 
-('admin', '$2a$10$X8/iXjkwlVVSfY0dYhJ/9.KWXUUqGBMqyj0lTYtYA0CLPvGX4TR4S', '系统管理员', 1);
+-- 插入测试用户数据（密码：123456）
+INSERT INTO sys_user (username, password, nickname, status) VALUES
+('admin', '$2a$10$X/uMNuiw3UZKzefO5w.NTOoEdxD7ZN3GE3z3uqyoEZuH.PE.8k6.2', '管理员', 1),
+('user', '$2a$10$X/uMNuiw3UZKzefO5w.NTOoEdxD7ZN3GE3z3uqyoEZuH.PE.8k6.2', '测试用户', 1);
 
--- 给管理员分配角色
-INSERT INTO sys_user_role (user_id, role_id) 
-SELECT u.id, r.id 
-FROM sys_user u, sys_role r 
-WHERE u.username = 'admin' AND r.role_code = 'ADMIN';
+-- 关联用户和角色
+INSERT INTO sys_user_role (user_id, role_id) VALUES 
+(1, 1), -- admin用户关联管理员角色
+(2, 2); -- user用户关联普通用户角色
+
+-- 创建存储过程生成更多测试用户数据
+DELIMITER //
+CREATE PROCEDURE generate_test_users(IN num INT)
+BEGIN
+    DECLARE i INT DEFAULT 0;
+    WHILE i < num DO
+        INSERT INTO sys_user (username, password, nickname, status) VALUES
+        (
+            CONCAT('test_user_', i),
+            '$2a$10$X/uMNuiw3UZKzefO5w.NTOoEdxD7ZN3GE3z3uqyoEZuH.PE.8k6.2',
+            CONCAT('测试用户', i),
+            1
+        );
+        -- 为新用户分配普通用户角色
+        INSERT INTO sys_user_role (user_id, role_id) VALUES (LAST_INSERT_ID(), 2);
+        SET i = i + 1;
+    END WHILE;
+END //
+DELIMITER ;
+
+-- 执行存储过程生成10个测试用户（可选）
+-- CALL generate_test_users(10);
+
+-- 删除存储过程（可选）
+-- DROP PROCEDURE IF EXISTS generate_test_users;
