@@ -753,7 +753,7 @@ springdoc:
 解决步骤:
 1. 确认依赖版本是否正确
 2. 检查配置路径是否正确
-3. 验证包扫描路径是否正确
+3. 验证包扫��路径是否正确
 ```
 
 
@@ -847,6 +847,149 @@ public class BusinessException extends RuntimeException {
     public BusinessException(Integer code, String message) {
         super(message);
         this.code = code;
+    }
+}
+```
+
+## 6. Spring Security 认证
+
+### 6.1 认证流程说明
+
+#### 1. Security配置
+Security配置是整个认证系统的核心，主要用于：
+- 配置安全策略
+- 设置认证过滤器链
+- 配置路由权限
+- 配置认证管理器
+
+关键代码：
+```java:src/main/java/org/example/security/config/SecurityConfig.java
+@Configuration
+@EnableWebSecurity
+@RequiredArgsConstructor
+public class SecurityConfig {
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf().disable()
+            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            .and()
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            .authorizeHttpRequests()
+                .requestMatchers("/api/auth/**").permitAll()
+                .anyRequest().authenticated();
+        return http.build();
+    }
+}
+```
+
+#### 2. 认证流程
+1. **用户登录请求**
+   - 用户提交用户名和密码
+   - AuthController接收请求并转发给AuthService
+
+2. **认证处理**
+   - AuthenticationManager验证用户凭据
+   - UserDetailsService加载用户信息
+   - 密码编码器验证密码
+   - 生成JWT token
+
+3. **JWT认证过滤**
+   - JwtAuthenticationFilter拦截请求
+   - 从header提取token
+   - 验证token有效性
+   - 加载用户信息
+   - 设置认证上下文
+
+#### 3. 关键组件说明
+
+1. **JWT过滤器**：
+```java
+@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, 
+                                  HttpServletResponse response, 
+                                  FilterChain filterChain) {
+        try {
+            String token = getJwtFromRequest(request);
+            if (token != null && jwtUtil.validateToken(token)) {
+                String username = jwtUtil.getUsernameFromToken(token);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                SecurityContextHolder.getContext().setAuthentication(
+                    new UsernamePasswordAuthenticationToken(
+                        userDetails, 
+                        null, 
+                        userDetails.getAuthorities()
+                    )
+                );
+            }
+        } catch (Exception e) {
+            log.error("无法设置用户认证", e);
+        }
+        filterChain.doFilter(request, response);
+    }
+}
+```
+
+2. **认证服务**：
+```java
+@Service
+public class AuthService {
+    public R<LoginResponse> login(LoginRequest request) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                    request.getUsername(), 
+                    request.getPassword()
+                )
+            );
+            String token = jwtUtil.generateToken(authentication);
+            return R.success(new LoginResponse(token));
+        } catch (AuthenticationException e) {
+            return R.fail("用户名或密码错误");
+        }
+    }
+}
+```
+
+3. **用户详情服务**：
+```java
+@Service
+public class UserDetailsServiceImpl implements UserDetailsService {
+    @Override
+    public UserDetails loadUserByUsername(String username) {
+        SysUser user = userService.findByUsername(username);
+        if (user == null) {
+            throw new UsernameNotFoundException("用户不存在");
+        }
+        return User.builder()
+            .username(user.getUsername())
+            .password(user.getPassword())
+            .authorities("USER")
+            .build();
+    }
+}
+```
+
+### 6.2 测试认证流程
+
+可以使用以下测试用例验证认证流程：
+```java
+@SpringBootTest
+@AutoConfigureMockMvc
+public class AuthControllerTest {
+    @Test
+    void testLogin() throws Exception {
+        LoginRequest request = new LoginRequest();
+        request.setUsername("admin");
+        request.setPassword("123456");
+        
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.token").exists());
     }
 }
 ```
