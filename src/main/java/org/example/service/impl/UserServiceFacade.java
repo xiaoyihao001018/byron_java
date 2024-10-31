@@ -4,12 +4,12 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.example.dto.request.UserCreateRequest;
-import org.example.dto.request.UserUpdateRequest;
 import org.example.dto.response.UserDetailResponse;
 import org.example.entity.SysUser;
 import org.example.service.SysUserService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -19,15 +19,11 @@ public class UserServiceFacade {
     private final PasswordEncoder passwordEncoder;
     
     public void createUser(UserCreateRequest request) {
-        request.setPassword(passwordEncoder.encode(request.getPassword()));
-        userService.createUser(request);
-    }
-    
-    public void updateUser(Long userId, UserUpdateRequest request) {
-        if (request.getNewPassword() != null) {
-            request.setNewPassword(passwordEncoder.encode(request.getNewPassword()));
-        }
-        userService.updateUser(userId, request);
+        SysUser user = new SysUser();
+        user.setUsername(request.getUsername());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setCreateTime(LocalDateTime.now());
+        userService.save(user);
     }
     
     public UserDetailResponse getUserDetail(Long id) {

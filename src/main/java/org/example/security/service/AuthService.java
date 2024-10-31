@@ -5,16 +5,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.common.exception.BusinessException;
 import org.example.common.result.R;
 import org.example.entity.SysUser;
-import org.example.security.dto.LoginRequest;
-import org.example.security.dto.LoginResponse;
-import org.example.security.dto.RegisterRequest;
+import org.example.security.dto.request.LoginRequest;
+import org.example.security.dto.response.LoginResponse;
+import org.example.security.dto.request.RegisterRequest;
 import org.example.security.util.JwtUtil;
 import org.example.service.SysUserService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -62,7 +61,5 @@ public class AuthService {
         // 保存用户
         userService.save(user);
 
-        // 分配默认角色
-        userService.assignDefaultRole(user.getId());
     }
 } 

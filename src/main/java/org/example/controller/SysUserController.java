@@ -6,11 +6,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.common.result.R;
-import org.example.dto.request.UserCreateRequest;
-import org.example.dto.request.UserUpdateRequest;
 import org.example.dto.response.UserDetailResponse;
 import org.example.entity.SysUser;
 import org.example.service.impl.UserServiceFacade;
@@ -41,12 +38,4 @@ public class SysUserController {
         return R.success(userService.getUserDetail(id));
     }
 
-    @Operation(summary = "更新用户")
-    @PutMapping("/{id}")
-    public R<Void> updateUser(
-            @Parameter(description = "用户ID") @PathVariable Long id,
-            @Valid @RequestBody UserUpdateRequest request) {
-        userService.updateUser(id, request);
-        return R.success();
-    }
 } 
