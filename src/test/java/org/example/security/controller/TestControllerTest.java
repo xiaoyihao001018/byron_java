@@ -1,8 +1,8 @@
 package org.example.security.controller;
 
+import org.example.security.dto.request.LoginRequest;
+import org.example.security.dto.response.LoginResponse;
 import org.example.security.service.AuthService;
-import org.example.security.vo.LoginRequest;
-import org.example.security.vo.LoginResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

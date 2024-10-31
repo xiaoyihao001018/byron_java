@@ -1,4 +1,5 @@
 # Spring Boot 3 + MyBatis Plus + Security + JWT 项目教程
+未来将是一个分布式微服务的架构，可以承受高并发的业务场景
 
 > 本教程将指导你从零开始搭建一个基于 Spring Boot 3 的后端项目,包含用户认证、权限控制等基础功能。
 
@@ -11,6 +12,7 @@
 6. [Spring Security 认证](#6-spring-security-认证)
 7. [JWT 令牌集成](#7-jwt-令牌集成)
 8. [单元测试](#8-单元测试)
+9. [整合 Redis](#9-整合-redis)
 
 ## 项目架构
 
@@ -24,6 +26,7 @@ mindmap
     数据库
       MySQL
       MyBatis Plus
+      Redis
     文档工具
       Swagger 3
     工具框架
@@ -46,6 +49,7 @@ graph TD
     D --> J[mapper/数据访问]
     D --> K[security/安全相关]
     D --> L[common/公共组件]
+    D --> M[redis/Redis相关]
 ```
 
 ## 1. 项目初始化
@@ -256,7 +260,7 @@ logging:
 - 确保所有文件都已创建
 - 检查包名和目录结构是否正确
 - 运行 Application.java 启动项目
-- 访问 http://localhost:8080 验证项目是否启动成功
+- 访问 http://localhost:8080 验证目是否启动成功
 
 ### 1.5 常见问题及解决方案
 
@@ -317,7 +321,7 @@ USE test_db;
 -- 创建用户表
 CREATE TABLE sys_user (
     id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
-    username VARCHAR(50) NOT NULL COMMENT '用户名',
+    username VARCHAR(50) NOT NULL COMMENT '用户',
     password VARCHAR(100) NOT NULL COMMENT '密码',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     PRIMARY KEY (id),
@@ -574,11 +578,11 @@ public class SysUserServiceTest {
 ```java
 package org.example.config;
 
+import org.springframework.context.annotation.Configuration;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
-import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @OpenAPIDefinition(
@@ -753,7 +757,7 @@ springdoc:
 解决步骤:
 1. 确认依赖版本是否正确
 2. 检查配置路径是否正确
-3. 验证包扫��路径是否正确
+3. 验证包扫描路径是否正确
 ```
 
 
@@ -992,4 +996,102 @@ public class AuthControllerTest {
             .andExpect(jsonPath("$.data.token").exists());
     }
 }
+```
+
+## 9. 整合 Redis
+
+### 9.1 添加依赖
+在 `pom.xml` 中添加以下依赖:
+
+```xml
+<!-- Redis -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-redis</artifactId>
+</dependency>
+```
+
+### 9.2 Redis 配置
+1. 创建 Redis 配置类 `config/RedisConfig.java`:
+```java:src/main/java/org/example/config/RedisConfig.java
+startLine: 1
+endLine: 80
+```
+
+2. 创建 Redis 工具类 `common/util/RedisUtil.java`:
+```java:src/main/java/org/example/common/util/RedisUtil.java
+startLine: 1
+endLine: 50
+```
+
+3. 在 `application.yml` 中添加 Redis 配置:
+```yaml
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      timeout: 10000
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1
+          max-idle: 8
+          min-idle: 0
+```
+
+### 9.3 Redis 测试
+创建测试类 `test/java/org/example/redis/RedisTest.java`:
+```java:src/test/java/org/example/redis/RedisTest.java
+startLine: 1
+endLine: 40
+```
+
+### 9.4 常见问题及解决方案
+
+1. Redis 连���失败
+```
+解决步骤:
+1. 确保 Redis 服务已启动
+2. 检查 Redis 连接配置是否正确
+3. 验证防火墙是否允许 Redis 端口
+```
+
+2. 序列化问题
+```
+解决步骤:
+1. 检查 RedisConfig 中的序列化配置
+2. 确保实体类实现 Serializable 接口
+3. 验证存储的对象是否可序列化
+```
+
+3. 缓存操作异常
+```
+解决步骤:
+1. 检查 RedisUtil 使用方式是否正确
+2. 确认 key 的命名规范
+3. 验证数据类型是否匹配
+```
+
+### 9.5 使用建议
+
+1. Key 命名规范
+```
+建议格式: 业务:模块:功能:id
+示例: user:info:1
+```
+
+2. 过期时间设置
+```
+1. 根据业务需求设置合理的过期时间
+2. 避免永久存储无用数据
+3. 建议使用 RedisUtil 统一管理过期时间
+```
+
+3. 缓存更新策略
+```
+1. 先更新数据库，再删除缓存
+2. 设置合理的缓存失效时间
+3. 对于热点数据考虑使用双删策略
 ```
