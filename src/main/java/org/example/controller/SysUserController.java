@@ -6,8 +6,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.example.annotation.OperationLog;
 import org.example.common.result.R;
+import org.example.dto.request.UserCreateRequest;
 import org.example.dto.response.UserDetailResponse;
 import org.example.entity.SysUser;
 import org.example.service.impl.UserServiceFacade;
@@ -36,6 +39,13 @@ public class SysUserController {
     @GetMapping("/{id}")
     public R<UserDetailResponse> getUserDetail(@Parameter(description = "用户ID") @PathVariable Long id) {
         return R.success(userService.getUserDetail(id));
+    }
+
+    @OperationLog("创建用户")
+    @PostMapping
+    public R<Void> createUser(@Valid @RequestBody UserCreateRequest request) {
+        userService.createUser(request);
+        return R.success();
     }
 
 } 

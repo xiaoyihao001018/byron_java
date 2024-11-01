@@ -27,6 +27,19 @@ spring:
           min-idle: 0
   main:
     allow-circular-references: true
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: example-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "org.example.dto.message"
+        spring.json.value.default.type: "org.example.dto.message.OperationLogMessage"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 mybatis-plus:
   configuration:
@@ -56,3 +69,7 @@ logging:
     org.springframework.security: DEBUG
     org.example.security: DEBUG
     org.example.mapper: DEBUG
+
+kafka:
+  topic:
+    operation-log: operation-log-topic
