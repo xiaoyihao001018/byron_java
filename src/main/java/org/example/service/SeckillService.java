@@ -13,8 +13,10 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SeckillService {
     private final StringRedisTemplate redisTemplate;
+    // 注入消息生产者
     private final SeckillProducer seckillProducer;
     
+    // Redis扣减库存逻辑
     public void seckill(Long userId, Long productId, Integer quantity) {
         // 1. 检查库存
         String stockKey = "product:stock:" + productId;

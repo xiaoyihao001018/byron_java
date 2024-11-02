@@ -1,16 +1,18 @@
 package org.example.common.util;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Component;
-
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
-@Component
-@RequiredArgsConstructor
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
+
+import lombok.RequiredArgsConstructor;
+
+@Component  // Spring组件注解，使其可被自动注入
+@RequiredArgsConstructor  // Lombok注解，生成带有final字段的构造函数
 public class RedisUtil {
 
+    // 注入RedisTemplate
     private final RedisTemplate<String, Object> redisTemplate;
     
     /**
@@ -47,4 +49,4 @@ public class RedisUtil {
     public Boolean expire(String key, long time) {
         return redisTemplate.expire(key, time, TimeUnit.SECONDS);
     }
-} 
+}
