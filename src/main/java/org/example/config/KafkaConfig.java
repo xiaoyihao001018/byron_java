@@ -1,13 +1,15 @@
 package org.example.config;
 
+import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.example.dto.message.OperationLogMessage;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.config.TopicBuilder;
+import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
-import org.springframework.kafka.core.DefaultKafkaProducerFactory;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
 import java.util.HashMap;
@@ -15,6 +17,16 @@ import java.util.Map;
 
 @Configuration
 public class KafkaConfig {
+    
+    public static final String SECKILL_TOPIC = "seckill-orders";
+    
+    @Bean
+    public NewTopic seckillTopic() {
+        return TopicBuilder.name(SECKILL_TOPIC)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
 
     @Bean
     public ProducerFactory<String, OperationLogMessage> producerFactory() {

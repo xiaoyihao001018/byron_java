@@ -1,18 +1,19 @@
 package org.example.mq;
 
-import lombok.extern.slf4j.Slf4j;
+import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
+
 import org.example.dto.message.OperationLogMessage;
 import org.example.mq.producer.LogProducer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.kafka.test.context.EmbeddedKafka;
 
-import java.time.LocalDateTime;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@EmbeddedKafka(partitions = 1, topics = {"operation-logs"})
 @SpringBootTest
 public class KafkaIntegrationTest {
 

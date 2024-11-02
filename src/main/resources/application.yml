@@ -36,7 +36,7 @@ spring:
         spring.json.type.mapping: operationLog:org.example.dto.message.OperationLogMessage
       retries: 3
     consumer:
-      group-id: example-group
+      group-id: operation-log-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
